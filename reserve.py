@@ -131,7 +131,7 @@ def row_interval(text):
 
 def classify_record(text, settings):
     # 未开始/已开始是查询分类；实际有效预约行的状态显示为“审核通过”。
-    if not re.search(r"未开始|已开始|审核通过", text):
+    if not re.search(r"未开始|已开始|审核通过|已签到", text):
         raise BookingError("未能确认预约记录状态，已停止，避免重复预约。")
     start, end = row_interval(text)
     wanted_start = datetime.strptime(f"{settings.date} {settings.start}", "%Y-%m-%d %H:%M")

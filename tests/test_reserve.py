@@ -50,6 +50,20 @@ class ParameterTests(unittest.TestCase):
 class RecordTests(unittest.TestCase):
     def test_exact_existing_reservation(self):
         self.assertEqual(classify_record("123 4F-A113 2026-10-02 19:00 ~ 22:00 未开始", settings()), ("existing", "4F-A113"))
+    def test_signed_in_reservation_blocks_overlapping_booking(self):
+        target = SimpleNamespace(
+            date="2026-11-01",
+            start="19:00",
+            end="22:00",
+            seats=("4F-A114",),
+        )
+        text = (
+            "图书馆二楼 二楼C区 2F-C057 "
+            "开始:2026-11-01 09:20 "
+            "结束:2026-11-01 22:00 已签到"
+        )
+        status, _ = classify_record(text, target)
+        self.assertEqual(status, "conflict")
 
     def test_overlap_on_another_seat_is_a_conflict(self):
         self.assertEqual(classify_record("123 4F-A110 2026-10-02 20:00 ~ 22:00 未开始", settings())[0], "conflict")
