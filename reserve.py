@@ -261,7 +261,7 @@ class Booker:
         field = self.page.get_by_role("checkbox", name=label, exact=True)
         if field.is_checked() != checked:
             # Element UI 的原生 input 被文字标签覆盖，点击可见标签正常切换。
-            self.act(self.page.get_by_text(label, exact=True).click)
+            self.act(self.page.locator(".el-checkbox").get_by_text(label, exact=True).click)
         if checked:
             self.expect(field).to_be_checked()
         else:

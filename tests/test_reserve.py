@@ -91,8 +91,10 @@ class CustomControlTests(unittest.TestCase):
         field = b.page.get_by_role.return_value
         field.is_checked.return_value = True
         b.set_checkbox("已结束", False)
-        b.page.get_by_text.assert_called_once_with("已结束", exact=True)
-        b.page.get_by_text.return_value.click.assert_called_once()
+        b.page.locator.assert_called_once_with(".el-checkbox")
+        labels = b.page.locator.return_value
+        labels.get_by_text.assert_called_once_with("已结束", exact=True)
+        labels.get_by_text.return_value.click.assert_called_once()
         field.click.assert_not_called()
         b.expect.return_value.not_to_be_checked.assert_called_once()
         b.page.wait_for_timeout.assert_called_once_with(2000)
