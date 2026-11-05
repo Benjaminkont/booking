@@ -326,9 +326,26 @@ def describe(state):
 
 
 def service_active():
+    if sys.platform == "darwin":
+        # 服务进程运行时会持续持有 daemon.lock 的排他锁。
+        lock_path = ROOT / ".booking-service" / "daemon.lock"
+        try:
+            with lock_path.open("r+") as handle:
+                try:
+                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    return True
+                fcntl.flock(handle, fcntl.LOCK_UN)
+                return False
+        except OSError:
+            return False
+
     try:
-        return subprocess.run(["systemctl", "--user", "is-active", "--quiet", UNIT],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        return subprocess.run(
+            ["systemctl", "--user", "is-active", "--quiet", UNIT],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode == 0
     except OSError:
         return False
 

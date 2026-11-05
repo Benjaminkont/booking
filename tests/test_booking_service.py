@@ -1,10 +1,12 @@
+import fcntl
+import booking_service
 import stat
 import tempfile
 import time
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock,patch
 
 from booking_service import Controller, Store, parse_run_at
 from reserve import BookingError, SHANGHAI
@@ -259,6 +261,31 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(controller.store.read()["last_result"]["outcome"], "success")
         self.assertIn("FAKE_WORKER_DONE", (controller.store.directory / "last-run.log").read_text())
 
+class ServiceActiveTests(unittest.TestCase):
+    def test_macos_detects_daemon_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            lock_path = root / ".booking-service" / "daemon.lock"
+
+            with patch("booking_service.ROOT", root), \
+                    patch("booking_service.sys.platform", "darwin"):
+                # 锁文件不存在：服务未运行。
+                self.assertFalse(booking_service.service_active())
+
+                lock_path.parent.mkdir()
+                with lock_path.open("a") as handle:
+                    # 文件存在，但没有进程持锁：服务未运行。
+                    self.assertFalse(booking_service.service_active())
+
+                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    try:
+                        # 锁被持有：服务运行中。
+                        self.assertTrue(booking_service.service_active())
+                    finally:
+                        fcntl.flock(handle, fcntl.LOCK_UN)
+
+                    # 锁释放后：服务未运行。
+                    self.assertFalse(booking_service.service_active())
 
 if __name__ == "__main__":
     unittest.main()
